@@ -14,6 +14,7 @@ A simple web application for managing contacts, built with Flask and PostgreSQL.
 - **Database**: PostgreSQL
 - **Frontend**: HTML, CSS, JavaScript
 - **Analytics**: PostHog for tracking user interactions
+- **Network Monitoring**: Wireshark, PyShark for real-time packet analysis
 
 ## Getting Started
 
@@ -24,6 +25,8 @@ A simple web application for managing contacts, built with Flask and PostgreSQL.
 - Flask
 - psycopg2
 - python-dotenv
+- PyShark
+- Wireshark
 
 ### Installation
 
@@ -35,12 +38,12 @@ A simple web application for managing contacts, built with Flask and PostgreSQL.
 2. Create a virtual env and activate:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On macOS/Linux
-   .\venv\Scripts\activate   # On Windows
+   source venv/bin/activate  
+   .\venv\Scripts\activate   
    ```
 3. Install packages:
    ```bash
-   pip install Flask psycopg2 python-dotenv
+   pip install Flask psycopg2 python-dotenv pyshark
    ```
 4. Create a .env file in the root directory with DB credentials
    ```bash
