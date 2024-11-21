@@ -3,24 +3,26 @@ import psycopg2
 from psycopg2 import OperationalError
 import os
 from dotenv import load_dotenv
+from logger_config import setup_logger
+import pyshark
 
-# Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 
-# Connect to PostgreSQL
+logger = setup_logger()
+
 def get_db_connection():
     try:
         conn = psycopg2.connect(
-            dbname=os.getenv("DB_NAME", "contact_manager"),  # Default to contact_manager
-            user=os.getenv("DB_USER", "your_username"),      # Replace with your PostgreSQL username
-            password=os.getenv("DB_PASSWORD", "your_password"),  # Replace with your PostgreSQL password
-            host=os.getenv("DB_HOST", "localhost")            # Default to localhost
+            dbname=os.getenv("DB_NAME", "contact_manager"),
+            user=os.getenv("DB_USER", "your_username"),      
+            password=os.getenv("DB_PASSWORD", "your_password"),  
+            host=os.getenv("DB_HOST", "localhost")            
         )
         return conn
     except OperationalError as e:
-        print(f"Error connecting to the database: {e}")
+        logger.error(f"Error connecting to the database: {e}")  
         return None
 
 @app.route('/')
@@ -31,6 +33,7 @@ def index():
 def get_contacts():
     conn = get_db_connection()
     if conn is None:
+        logger.error("Database connection failed in GET /contacts")  
         return jsonify({"error": "Database connection failed"}), 500
 
     cur = conn.cursor()
@@ -38,6 +41,7 @@ def get_contacts():
     contacts = cur.fetchall()
     cur.close()
     conn.close()
+    logger.info("Fetched contacts successfully")  
     return jsonify(contacts)
 
 @app.route('/contacts', methods=['POST'])
@@ -48,6 +52,7 @@ def add_contact():
     
     conn = get_db_connection()
     if conn is None:
+        logger.error("Database connection failed in POST /contacts")
         return jsonify({"error": "Database connection failed"}), 500
 
     cur = conn.cursor()
@@ -56,7 +61,23 @@ def add_contact():
     cur.close()
     conn.close()
     
+    logger.info(f"Added new contact: {name}, {phone}")  
     return jsonify(new_contact), 201
+
+@app.route('/capture', methods=['GET'])
+def capture_packets():
+    capture = pyshark.LiveCapture(interface='en0')
+    packets = []
+
+    try:
+        for packet in capture.sniff_continuously(packet_count=10):
+            packets.append(str(packet))
+        logger.info("Captured packets successfully")
+    except Exception as e:
+        logger.error(f"Error capturing packets: {e}")
+        return jsonify({"error": "Packet capture failed"}), 500
+
+    return jsonify(packets), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
