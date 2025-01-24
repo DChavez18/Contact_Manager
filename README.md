@@ -52,6 +52,14 @@ A simple web application for managing contacts, built with Flask and PostgreSQL.
    DB_PASSWORD=your_password
    DB_HOST=localhost
    ```
+5. Ensure DB Structure
+   ```bash
+   CREATE TABLE contacts (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(255) NOT NULL  -- Updated to accommodate longer encrypted phone numbers
+   );
+   ```
 ### Running the Application
 
   ```bash
