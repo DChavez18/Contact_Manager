@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from logger_config import setup_logger
 import pyshark
+from encryption import encrypt_message, decrypt_message  # Import encryption functions
 
 load_dotenv()
 
@@ -16,9 +17,9 @@ def get_db_connection():
     try:
         conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME", "contact_manager"),
-            user=os.getenv("DB_USER", "your_username"),      
-            password=os.getenv("DB_PASSWORD", "your_password"),  
-            host=os.getenv("DB_HOST", "localhost")            
+            user=os.getenv("DB_USER", "your_username"),
+            password=os.getenv("DB_PASSWORD", "your_password"),
+            host=os.getenv("DB_HOST", "localhost")
         )
         return conn
     except OperationalError as e:
@@ -41,8 +42,17 @@ def get_contacts():
     contacts = cur.fetchall()
     cur.close()
     conn.close()
+
+    # Decrypt phone numbers
+    decrypted_contacts = []
+    for contact in contacts:
+        name = contact[0]
+        encrypted_phone = contact[1]
+        phone = decrypt_message(encrypted_phone)  # Decrypt the phone number
+        decrypted_contacts.append((name, phone))
+        
     logger.info("Fetched contacts successfully")  
-    return jsonify(contacts)
+    return jsonify(decrypted_contacts)  # Return decrypted contacts
 
 @app.route('/contacts', methods=['POST'])
 def add_contact():
@@ -50,13 +60,16 @@ def add_contact():
     name = new_contact['name']
     phone = new_contact['phone']
     
+    # Encrypt the phone number
+    encrypted_phone = encrypt_message(phone)
+
     conn = get_db_connection()
     if conn is None:
         logger.error("Database connection failed in POST /contacts")
         return jsonify({"error": "Database connection failed"}), 500
 
     cur = conn.cursor()
-    cur.execute('INSERT INTO contacts (name, phone) VALUES (%s, %s)', (name, phone))
+    cur.execute('INSERT INTO contacts (name, phone) VALUES (%s, %s)', (name, encrypted_phone))
     conn.commit()
     cur.close()
     conn.close()
